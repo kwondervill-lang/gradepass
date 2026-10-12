@@ -175,40 +175,28 @@ export const AVAILABLE_SUBJECTS_BY_GROUP: Record<SubjectGroup, string[]> = {
 };
 
 export const DEFAULT_SUBJECT_PRESETS: Record<HighSchoolGrade, SubjectEntry[]> = {
-  '1학년': [
-    { id: 's-1', group: '국어', name: '공통국어1', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-2', group: '수학', name: '공통수학1', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-3', group: '영어', name: '공통영어1', credits: 4, grade5: 1, subBand: '하' },
-    { id: 's-4', group: '사회', name: '통합사회1', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-5', group: '과학', name: '통합과학1', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-6', group: '사회', name: '한국사1', credits: 3, grade5: 1, subBand: '중' },
-    { id: 's-7', group: '정보·제2외국어', name: '정보', credits: 3, grade5: 1, subBand: '중' },
+  고1: [
+    { id: 'g1-1', gradeLevel: '고1', group: '국어', name: '공통국어1', credits: 4, grade5: 2, subBand: '상' },
+    { id: 'g1-2', gradeLevel: '고1', group: '수학', name: '공통수학1', credits: 4, grade5: 2, subBand: '중' },
+    { id: 'g1-3', gradeLevel: '고1', group: '영어', name: '공통영어1', credits: 4, grade5: 1, subBand: '하' },
   ],
-  '2학년': [
-    { id: 's-1', group: '국어', name: '문학', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-2', group: '국어', name: '독서와 작문', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-3', group: '수학', name: '대수', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-4', group: '수학', name: '미적분I', credits: 4, grade5: 3, subBand: '상' },
-    { id: 's-5', group: '수학', name: '확률과 통계', credits: 3, grade5: 1, subBand: '하' },
-    { id: 's-6', group: '영어', name: '영어I', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-7', group: '과학', name: '물리학', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-8', group: '과학', name: '화학', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-9', group: '사회', name: '사회·문화', credits: 3, grade5: 1, subBand: '중' },
-    { id: 's-10', group: '정보·제2외국어', name: '데이터 과학', credits: 3, grade5: 1, subBand: '상' },
+  고2: [
+    { id: 'g2-1', gradeLevel: '고2', group: '국어', name: '문학', credits: 4, grade5: 2, subBand: '상' },
+    { id: 'g2-2', gradeLevel: '고2', group: '수학', name: '대수', credits: 4, grade5: 2, subBand: '중' },
+    { id: 'g2-3', gradeLevel: '고2', group: '영어', name: '영어I', credits: 4, grade5: 2, subBand: '상' },
   ],
-  '3학년': [
-    { id: 's-1', group: '국어', name: '화법과 언어', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-2', group: '국어', name: '독서와 작문', credits: 4, grade5: 1, subBand: '하' },
-    { id: 's-3', group: '수학', name: '미적분I', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-4', group: '수학', name: '미적분II', credits: 4, grade5: 3, subBand: '상' },
-    { id: 's-5', group: '수학', name: '기하', credits: 3, grade5: 2, subBand: '상' },
-    { id: 's-6', group: '영어', name: '영어 독해와 작문', credits: 4, grade5: 2, subBand: '상' },
-    { id: 's-7', group: '과학', name: '물리학', credits: 4, grade5: 2, subBand: '중' },
-    { id: 's-8', group: '과학', name: '생명과학', credits: 4, grade5: 1, subBand: '하' },
-    { id: 's-9', group: '사회', name: '경제', credits: 3, grade5: 2, subBand: '상' },
-    { id: 's-10', group: '정보·제2외국어', name: '인공지능 수학', credits: 3, grade5: 1, subBand: '중' },
+  고3: [
+    { id: 'g3-1', gradeLevel: '고3', group: '국어', name: '화법과 언어', credits: 4, grade5: 2, subBand: '상' },
+    { id: 'g3-2', gradeLevel: '고3', group: '수학', name: '미적분I', credits: 4, grade5: 2, subBand: '중' },
+    { id: 'g3-3', gradeLevel: '고3', group: '영어', name: '영어 독해와 작문', credits: 4, grade5: 2, subBand: '상' },
   ],
 };
+
+export const INITIAL_HIGH_SCHOOL_SUBJECTS: SubjectEntry[] = [
+  ...DEFAULT_SUBJECT_PRESETS['고1'],
+  ...DEFAULT_SUBJECT_PRESETS['고2'],
+  ...DEFAULT_SUBJECT_PRESETS['고3'],
+];
 
 // ======================================================================================
 // 실제 대입정보포털 '어디가(adiga.kr)' 및 대학별 입학처 공식 발표

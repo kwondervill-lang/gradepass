@@ -14,8 +14,8 @@ import {
   StudentGPASummary,
   getSubjectGrade9,
 } from '../utils/admissionsAnalyzer';
-import { getSangdiLogoSvgDataUrl } from '../utils/reportExporter';
 import { CheckSquare, Square, Target, TrendingUp, Globe, ExternalLink } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 interface ConsultingReportViewProps {
   studentName: string;
@@ -57,8 +57,6 @@ export const ConsultingReportView: React.FC<ConsultingReportViewProps> = ({
   const [simulatedSubjectIds, setSimulatedSubjectIds] = useState<string[]>(() =>
     strategies.slice(0, 3).map((s) => s.subjectId)
   );
-
-  const logoSrc = branding.customLogoDataUrl || getSangdiLogoSvgDataUrl();
 
   const toggleSimulatedSubject = (subjectId: string) => {
     setSimulatedSubjectIds((prev) =>
@@ -266,7 +264,7 @@ export const ConsultingReportView: React.FC<ConsultingReportViewProps> = ({
             </a>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-            {studentName || '학생'} ({grade} {semester}) 수시 학생부교과 진학분석 리포트
+            {studentName || '학생'} · {grade} {semester} 수시 학생부교과 진학분석 리포트
           </h1>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600 mt-2">
             <span>
@@ -285,15 +283,10 @@ export const ConsultingReportView: React.FC<ConsultingReportViewProps> = ({
             href="https://www.sangdi.net"
             target="_blank"
             rel="noopener noreferrer"
-            title="생디 (www.sangdi.net) 웹사이트 열기"
+            title="생디 (www.sangdi.net) 공식 플랫폼"
             className="h-12 px-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center hover:border-sky-500 transition-colors"
           >
-            <img
-              src={logoSrc}
-              alt="생디 로고"
-              referrerPolicy="no-referrer"
-              className="h-9 max-w-[180px] object-contain"
-            />
+            <BrandLogo branding={branding} className="h-9 w-auto" />
           </a>
           <div className="text-[11px] text-slate-500 text-right">
             <span>발행일: {generatedDate}</span>
@@ -305,14 +298,58 @@ export const ConsultingReportView: React.FC<ConsultingReportViewProps> = ({
 
       {/* SECTION 01: 5등급제 평균 및 9등급제 환산 성적 요약 */}
       <section id="section-gpa" className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-slate-900">
-            01. 5등급제 내신 평균 계산 및 9등급제 정밀 환산 성적
-          </h2>
-          <span className="text-xs text-slate-500 font-mono tabular-nums">
-            총 {gpaSummary.subjectCount}과목 · {gpaSummary.totalCredits}학점 이수 기준
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              01. 5등급제 내신 평균 계산 및 9등급제 정밀 환산 성적 (
+              {grade === '고1' ? '고1 성적 집계' : grade === '고2' ? '고1~2 성적 합산 집계' : '고1~3 전학년 합산 집계'})
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {grade === '고1'
+                ? '고1 1개 학년 이수 성적 기준 환산'
+                : grade === '고2'
+                ? '고1 및 고2 2개년 이수 과목 단위수 가중평균 누적 합산 기준'
+                : '고1, 고2, 고3 전학년 이수 과목 단위수 가중평균 누적 합산 기준'}
+            </p>
+          </div>
+          <span className="text-xs text-slate-600 font-mono tabular-nums bg-slate-100 px-2.5 py-1 rounded-md">
+            총 {gpaSummary.subjectCount}과목 · {gpaSummary.totalCredits}학점 집계 반영
           </span>
         </div>
+
+        {/* 학년별 성적 집계 추이 바 (고2, 고3일 때 학년별 비교) */}
+        {gpaSummary.yearlySummaries && gpaSummary.yearlySummaries.length > 0 && (
+          <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                학년별 내신 성적 구성 및 누적 집계 현황
+              </span>
+              <span className="text-[11px] font-semibold text-blue-700">
+                {grade === '고1' ? '고1 단일 집계' : grade === '고2' ? '고1~2 누적 가중평균' : '고1~3 전학년 누적 가중평균'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {gpaSummary.yearlySummaries.map((ys) => (
+                <div
+                  key={ys.gradeLevel}
+                  className="p-2.5 bg-white border border-slate-200 rounded-lg flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-bold text-slate-900">{ys.gradeLevel} 성적</span>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {ys.subjectCount}과목 · {ys.credits}학점
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between font-mono tabular-nums">
+                    <span className="text-xs font-semibold text-blue-700">5등급제 {ys.avg5.toFixed(2)}등급</span>
+                    <span className="text-xs font-bold text-slate-900">9등급제 {ys.avg9.toFixed(2)}등급</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">

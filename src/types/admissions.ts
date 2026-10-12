@@ -1,4 +1,4 @@
-export type HighSchoolGrade = '1학년' | '2학년' | '3학년';
+export type HighSchoolGrade = '고1' | '고2' | '고3';
 export type Semester = '1학기' | '2학기';
 export type SubjectGroup = '국어' | '수학' | '영어' | '사회' | '과학' | '정보·제2외국어';
 export type Grade5Tier = 1 | 2 | 3 | 4 | 5;
@@ -6,6 +6,8 @@ export type SubBand = '상' | '중' | '하';
 
 export interface SubjectEntry {
   id: string;
+  gradeLevel: HighSchoolGrade; // '고1' | '고2' | '고3'
+  semester?: Semester; // '1학기' | '2학기'
   group: SubjectGroup;
   name: string;
   credits: number;

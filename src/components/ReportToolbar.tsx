@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { CompanyBranding } from '../types/admissions';
-import { getSangdiLogoSvgDataUrl } from '../utils/reportExporter';
+import { BrandLogo } from './BrandLogo';
 import {
   Building2,
   Code2,
@@ -39,8 +39,6 @@ export const ReportToolbar: React.FC<ReportToolbarProps> = ({
   const [showLogoPanel, setShowLogoPanel] = useState(false);
   const [logoUploadMessage, setLogoUploadMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const currentLogoSrc = branding.customLogoDataUrl || getSangdiLogoSvgDataUrl();
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,12 +82,7 @@ export const ReportToolbar: React.FC<ReportToolbarProps> = ({
             title="생디 (www.sangdi.net) 웹사이트 열기"
             className="h-10 px-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center shrink-0 hover:border-sky-500 transition-colors"
           >
-            <img
-              src={currentLogoSrc}
-              alt="생디 로고"
-              referrerPolicy="no-referrer"
-              className="h-7 max-w-[140px] object-contain"
-            />
+            <BrandLogo branding={branding} className="h-7 w-auto" />
           </a>
           <div>
             <div className="flex items-center gap-1.5">

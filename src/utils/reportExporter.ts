@@ -32,49 +32,77 @@ export interface FullReportPayload {
   generatedDate: string;
 }
 
-// 생디 (www.sangdi.net) 공식 벡터 SVG 로고 생성기
-export function getSangdiLogoSvgDataUrl(): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="96" viewBox="0 0 300 96">
+// 생디 (www.sangdi.net) 공식 벡터 SVG 인라인 마크업 생성기 (학생부를 디자인하다 · AI 기반 학생부 디자인 플랫폼)
+export function getSangdiInlineSvgString(heightPx = 44): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 140" style="height:${heightPx}px;width:auto;display:inline-block;vertical-align:middle;" fill="none" role="img" aria-label="생디 (www.sangdi.net) - 학생부를 디자인하다">
     <defs>
-      <linearGradient id="sangdiGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <linearGradient id="sangdiExportArrow" x1="0%" y1="100%" x2="100%" y2="0%">
         <stop offset="0%" stop-color="#0066FF"/>
         <stop offset="50%" stop-color="#00C0F3"/>
         <stop offset="100%" stop-color="#00F0B5"/>
       </linearGradient>
-      <linearGradient id="blueGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#1E40AF"/>
-        <stop offset="100%" stop-color="#103B91"/>
+      <linearGradient id="sangdiExportDot" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#00C0F3"/>
+        <stop offset="100%" stop-color="#00F0B5"/>
+      </linearGradient>
+      <linearGradient id="sangdiExportBar" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#0A3A94"/>
+        <stop offset="100%" stop-color="#0056D6"/>
       </linearGradient>
     </defs>
-    <!-- Background subtle rounded rect -->
-    <rect x="0" y="0" width="300" height="96" rx="12" fill="#FFFFFF"/>
-    
-    <!-- '생' Graphic Mark -->
-    <!-- Upward diagonal bar -->
-    <path d="M16 54 L36 34" stroke="url(#sangdiGrad)" stroke-width="11" stroke-linecap="round"/>
-    <!-- Upward arrow -->
-    <path d="M48 42 L66 22 M66 22 L50 22 M66 22 L66 38" stroke="url(#sangdiGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-    
-    <!-- ㅅ right leg -->
-    <rect x="52" y="38" width="9" height="14" rx="4.5" fill="url(#blueGrad)"/>
-    
-    <!-- ㅇ circle -->
-    <ellipse cx="44" cy="67" rx="19" ry="14" fill="none" stroke="url(#blueGrad)" stroke-width="9"/>
-    
-    <!-- '디' Graphic Mark -->
-    <!-- ㄷ shape -->
-    <path d="M96 36 L124 36 A 8 8 0 0 1 132 44 L132 46 M96 36 L96 66 M96 66 L124 66 A 8 8 0 0 0 132 58 L132 56" fill="none" stroke="url(#blueGrad)" stroke-width="9" stroke-linecap="round"/>
-    
-    <!-- ㅣ shape with cyan accent on top -->
-    <line x1="146" y1="42" x2="146" y2="76" stroke="url(#blueGrad)" stroke-width="9" stroke-linecap="round"/>
-    <circle cx="146" cy="30" r="4.5" fill="url(#sangdiGrad)"/>
-    
-    <!-- Text: Sangdi URL / Branding -->
-    <text x="170" y="44" font-family="'Noto Sans KR', sans-serif" font-size="18" font-weight="800" fill="#103B91">생디</text>
-    <text x="170" y="64" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="700" fill="#0284C7">www.sangdi.net</text>
-    <text x="170" y="77" font-family="'Noto Sans KR', sans-serif" font-size="9" font-weight="500" fill="#64748B">입시전략 플랫폼</text>
+    <g transform="translate(10, 10)">
+      <path d="M 24 78 L 54 48" stroke="url(#sangdiExportBar)" stroke-width="15" stroke-linecap="round"/>
+      <path d="M 72 66 L 105 33" stroke="url(#sangdiExportArrow)" stroke-width="13" stroke-linecap="round"/>
+      <path d="M 82 28 L 114 28 L 114 60" stroke="url(#sangdiExportArrow)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="92" y="58" width="14" height="26" rx="7" fill="#0C2E75"/>
+      <ellipse cx="70" cy="98" rx="28" ry="21" fill="none" stroke="#0C2E75" stroke-width="14"/>
+      <path d="M 180 44 L 142 44 A 10 10 0 0 0 132 54 L 132 88 A 10 10 0 0 0 142 98 L 180 98" fill="none" stroke="#0C2E75" stroke-width="14" stroke-linecap="round"/>
+      <line x1="208" y1="52" x2="208" y2="104" stroke="#0C2E75" stroke-width="14" stroke-linecap="round"/>
+      <path d="M 200 38 L 214 26 A 4 4 0 0 1 220 28 L 220 36 A 4 4 0 0 1 216 40 L 204 42 A 3 3 0 0 1 200 38 Z" fill="url(#sangdiExportDot)"/>
+    </g>
+    <g transform="translate(248, 22)">
+      <text x="0" y="48" font-family="'Noto Sans KR', sans-serif" font-size="31" font-weight="800" fill="#0B2768" letter-spacing="-0.03em">학생부를 디자인하다</text>
+      <text x="1" y="76" font-family="'Noto Sans KR', sans-serif" font-size="13.5" font-weight="600" fill="#475569" letter-spacing="0.12em">AI 기반 학생부 디자인 플랫폼</text>
+      <text x="1" y="95" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700" fill="#0284C7" letter-spacing="0.02em">www.sangdi.net</text>
+    </g>
   </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+// 생디 (www.sangdi.net) 공식 벡터 SVG 로고 데이터 URL 생성기
+export function getSangdiLogoSvgDataUrl(): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="540" height="140" viewBox="0 0 540 140" fill="none">
+    <defs>
+      <linearGradient id="sangdiDataArrow" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#0066FF"/>
+        <stop offset="50%" stop-color="#00C0F3"/>
+        <stop offset="100%" stop-color="#00F0B5"/>
+      </linearGradient>
+      <linearGradient id="sangdiDataDot" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#00C0F3"/>
+        <stop offset="100%" stop-color="#00F0B5"/>
+      </linearGradient>
+      <linearGradient id="sangdiDataBar" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#0A3A94"/>
+        <stop offset="100%" stop-color="#0056D6"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(10, 10)">
+      <path d="M 24 78 L 54 48" stroke="url(#sangdiDataBar)" stroke-width="15" stroke-linecap="round"/>
+      <path d="M 72 66 L 105 33" stroke="url(#sangdiDataArrow)" stroke-width="13" stroke-linecap="round"/>
+      <path d="M 82 28 L 114 28 L 114 60" stroke="url(#sangdiDataArrow)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="92" y="58" width="14" height="26" rx="7" fill="#0C2E75"/>
+      <ellipse cx="70" cy="98" rx="28" ry="21" fill="none" stroke="#0C2E75" stroke-width="14"/>
+      <path d="M 180 44 L 142 44 A 10 10 0 0 0 132 54 L 132 88 A 10 10 0 0 0 142 98 L 180 98" fill="none" stroke="#0C2E75" stroke-width="14" stroke-linecap="round"/>
+      <line x1="208" y1="52" x2="208" y2="104" stroke="#0C2E75" stroke-width="14" stroke-linecap="round"/>
+      <path d="M 200 38 L 214 26 A 4 4 0 0 1 220 28 L 220 36 A 4 4 0 0 1 216 40 L 204 42 A 3 3 0 0 1 200 38 Z" fill="url(#sangdiDataDot)"/>
+    </g>
+    <g transform="translate(248, 22)">
+      <text x="0" y="48" font-family="'Noto Sans KR', sans-serif" font-size="31" font-weight="800" fill="#0B2768" letter-spacing="-0.03em">학생부를 디자인하다</text>
+      <text x="1" y="76" font-family="'Noto Sans KR', sans-serif" font-size="13.5" font-weight="600" fill="#475569" letter-spacing="0.12em">AI 기반 학생부 디자인 플랫폼</text>
+      <text x="1" y="95" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="700" fill="#0284C7" letter-spacing="0.02em">www.sangdi.net</text>
+    </g>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function escapeXml(str: string): string {
@@ -138,9 +166,14 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
   const subjectRows = subjects
     .map((s) => {
       const g9 = getSubjectGrade9(s);
+      const gradeBadge = s.gradeLevel
+        ? `<span style="display:inline-block;padding:1px 6px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:4px;font-size:10px;font-weight:700;margin-right:6px;">${escapeXml(
+            s.gradeLevel
+          )}</span>`
+        : '';
       return `
       <tr>
-        <td>${escapeXml(s.group)}</td>
+        <td>${gradeBadge}${escapeXml(s.group)}</td>
         <td style="font-weight:600;color:#0F172A;">${escapeXml(s.name)}</td>
         <td style="text-align:right;font-family:monospace;">${s.credits}학점</td>
         <td style="text-align:right;font-family:monospace;font-weight:700;color:#1D4ED8;">${s.grade5}등급 (${s.subBand})</td>
@@ -296,7 +329,7 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
         )}</div>
         <h1 style="margin:0;font-size:24px;font-weight:700;color:#0F172A;">${escapeXml(
           studentName
-        )} 학생 (${escapeXml(grade)} ${escapeXml(semester)}) 수시 학생부교과 진학분석 리포트</h1>
+        )} 학생 · ${escapeXml(grade)} ${escapeXml(semester)} 수시 학생부교과 진학분석 리포트</h1>
         <div style="font-size:13px;color:#475569;margin-top:6px;">
           희망 학과: <strong>${escapeXml(track.name)}</strong> · 유사 분석 학과: ${escapeXml(
     track.relatedDepartments.join(', ')
@@ -304,7 +337,9 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
         </div>
       </div>
       <div style="text-align:right;">
-        <img src="${logoSrc}" alt="생디 www.sangdi.net" style="height:48px;object-fit:contain;" />
+        ${branding.customLogoDataUrl
+          ? `<img src="${branding.customLogoDataUrl}" alt="${escapeXml(branding.companyName)}" style="height:48px;max-width:240px;object-fit:contain;" />`
+          : `<a href="https://www.sangdi.net" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block;">${getSangdiInlineSvgString(48)}</a>`}
         <div style="font-size:11px;color:#64748B;margin-top:4px;">
           플랫폼: <strong>생디</strong> (<a href="https://www.sangdi.net" target="_blank" class="sangdi-badge">www.sangdi.net</a>) · 발행일: ${escapeXml(
     generatedDate
@@ -533,6 +568,122 @@ function wrapKoreanText(ctx: CanvasRenderingContext2D, text: string, maxWidth: n
   return lines;
 }
 
+function drawSangdiLogoVectorOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  rightX: number,
+  topY: number
+) {
+  ctx.save();
+  const originX = rightX - 340;
+  const originY = topY;
+
+  // Background subtle pill
+  ctx.fillStyle = '#F8FAFC';
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 1.5;
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath();
+    ctx.roundRect(originX - 10, originY - 10, 360, 90, 10);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.fillRect(originX - 10, originY - 10, 360, 90);
+    ctx.strokeRect(originX - 10, originY - 10, 360, 90);
+  }
+
+  // Linear gradient for arrow
+  const gradArrow = ctx.createLinearGradient(originX + 20, originY + 50, originX + 70, originY + 10);
+  gradArrow.addColorStop(0, '#0066FF');
+  gradArrow.addColorStop(0.5, '#00C0F3');
+  gradArrow.addColorStop(1, '#00F0B5');
+
+  // Gradient for diagonal bar
+  const gradBar = ctx.createLinearGradient(originX, originY + 45, originX + 40, originY + 15);
+  gradBar.addColorStop(0, '#0A3A94');
+  gradBar.addColorStop(1, '#0056D6');
+
+  // Left symbol '생'
+  ctx.strokeStyle = gradBar;
+  ctx.lineWidth = 9;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(originX + 12, originY + 42);
+  ctx.lineTo(originX + 32, originY + 22);
+  ctx.stroke();
+
+  // Upward Arrow
+  ctx.strokeStyle = gradArrow;
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(originX + 44, originY + 35);
+  ctx.lineTo(originX + 66, originY + 14);
+  ctx.stroke();
+
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(originX + 50, originY + 12);
+  ctx.lineTo(originX + 72, originY + 12);
+  ctx.lineTo(originX + 72, originY + 34);
+  ctx.stroke();
+
+  // Right leg
+  ctx.fillStyle = '#0C2E75';
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(originX + 58, originY + 32, 9, 16, 4);
+  } else {
+    ctx.fillRect(originX + 58, originY + 32, 9, 16);
+  }
+  ctx.fill();
+
+  // Bottom circle 'ㅇ'
+  ctx.strokeStyle = '#0C2E75';
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.ellipse(originX + 44, originY + 56, 17, 13, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // '디' - 'ㄷ'
+  ctx.strokeStyle = '#0C2E75';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(originX + 115, originY + 24);
+  ctx.lineTo(originX + 90, originY + 24);
+  ctx.lineTo(originX + 90, originY + 56);
+  ctx.lineTo(originX + 115, originY + 56);
+  ctx.stroke();
+
+  // '디' - 'ㅣ'
+  ctx.beginPath();
+  ctx.moveTo(originX + 132, originY + 28);
+  ctx.lineTo(originX + 132, originY + 60);
+  ctx.stroke();
+
+  // Mint point
+  ctx.fillStyle = '#00F0B5';
+  ctx.beginPath();
+  ctx.arc(originX + 132, originY + 18, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Typography
+  ctx.fillStyle = '#0B2768';
+  ctx.font = '800 20px "Noto Sans KR", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('학생부를 디자인하다', originX + 154, originY + 28);
+
+  ctx.fillStyle = '#475569';
+  ctx.font = '600 12px "Noto Sans KR", sans-serif';
+  ctx.fillText('AI 기반 학생부 디자인 플랫폼', originX + 154, originY + 47);
+
+  ctx.fillStyle = '#0284C7';
+  ctx.font = '700 12px "JetBrains Mono", monospace';
+  ctx.fillText('www.sangdi.net', originX + 154, originY + 63);
+
+  ctx.restore();
+}
+
 export async function downloadReportAsPDF(payload: FullReportPayload): Promise<void> {
   const W = 1600;
   const H = 2262;
@@ -558,7 +709,7 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
     ctx.fillStyle = '#0F172A';
     ctx.font = '700 36px "Noto Sans KR", sans-serif';
     ctx.fillText(
-      `${payload.studentName} 학생 (${payload.grade} ${payload.semester}) 수시 교과전형 진학분석 리포트`,
+      `${payload.studentName} 학생 · ${payload.grade} ${payload.semester} 수시 교과전형 진학분석 리포트`,
       80,
       168
     );
@@ -571,17 +722,13 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
       204
     );
 
-    if (logoImg) {
+    if (payload.branding.customLogoDataUrl && logoImg) {
       const targetH = 68;
       const ratio = logoImg.width / Math.max(1, logoImg.height);
       const targetW = Math.min(280, targetH * ratio);
       ctx.drawImage(logoImg, W - 80 - targetW, 92, targetW, targetH);
     } else {
-      ctx.fillStyle = '#103B91';
-      ctx.font = '800 26px "Noto Sans KR", sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText('생디 (www.sangdi.net)', W - 80, 135);
-      ctx.textAlign = 'left';
+      drawSangdiLogoVectorOnCanvas(ctx, W - 80, 98);
     }
 
     ctx.fillStyle = '#64748B';
@@ -661,7 +808,7 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
   let curY = 425;
   ctx1.fillStyle = '#0F172A';
   ctx1.font = '700 24px "Noto Sans KR", sans-serif';
-  ctx1.fillText('01. 학생 입력 교과목 성적 (5등급제 → 9등급제 환산 내역)', 80, curY);
+  ctx1.fillText(`01. 수시 반영 교과목 성적 (5등급제 → 9등급제 환산 내역 · ${payload.grade === '고1' ? '고1 성적' : payload.grade === '고2' ? '고1~2 누적' : '고1~3 전학년'})`, 80, curY);
   curY += 18;
 
   ctx1.fillStyle = '#F1F5F9';
@@ -694,7 +841,7 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
       const g9 = getSubjectGrade9(leftSub);
       ctx1.fillStyle = '#0F172A';
       ctx1.font = '600 17px "Noto Sans KR", sans-serif';
-      ctx1.fillText(`[${leftSub.group}] ${leftSub.name}`, 100, curY + 25);
+      ctx1.fillText(`[${leftSub.gradeLevel || '고1'}] [${leftSub.group}] ${leftSub.name}`, 100, curY + 25);
       ctx1.fillStyle = '#475569';
       ctx1.font = '500 17px "JetBrains Mono", monospace';
       ctx1.fillText(`${leftSub.credits}학점`, 430, curY + 25);
@@ -709,7 +856,7 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
       const g9 = getSubjectGrade9(rightSub);
       ctx1.fillStyle = '#0F172A';
       ctx1.font = '600 17px "Noto Sans KR", sans-serif';
-      ctx1.fillText(`[${rightSub.group}] ${rightSub.name}`, 820, curY + 25);
+      ctx1.fillText(`[${rightSub.gradeLevel || '고1'}] [${rightSub.group}] ${rightSub.name}`, 820, curY + 25);
       ctx1.fillStyle = '#475569';
       ctx1.font = '500 17px "JetBrains Mono", monospace';
       ctx1.fillText(`${rightSub.credits}학점`, 1150, curY + 25);

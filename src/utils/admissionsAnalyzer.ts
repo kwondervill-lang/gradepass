@@ -25,6 +25,14 @@ export interface GroupSummary {
   avg9: number;
 }
 
+export interface YearlyGPASummary {
+  gradeLevel: HighSchoolGrade;
+  credits: number;
+  subjectCount: number;
+  avg5: number;
+  avg9: number;
+}
+
 export interface StudentGPASummary {
   totalCredits: number;
   subjectCount: number;
@@ -34,6 +42,21 @@ export interface StudentGPASummary {
   coreAvg9: number;
   estimatedTopPercent: number;
   groupSummaries: GroupSummary[];
+  yearlySummaries: YearlyGPASummary[];
+}
+
+export function getActiveGradesForStudent(studentGrade: HighSchoolGrade): HighSchoolGrade[] {
+  if (studentGrade === '고1') return ['고1'];
+  if (studentGrade === '고2') return ['고1', '고2'];
+  return ['고1', '고2', '고3'];
+}
+
+export function filterSubjectsForStudentGrade(
+  subjects: SubjectEntry[],
+  studentGrade: HighSchoolGrade
+): SubjectEntry[] {
+  const activeGrades = getActiveGradesForStudent(studentGrade);
+  return subjects.filter((s) => activeGrades.includes(s.gradeLevel || '고1'));
 }
 
 export function getSubjectGrade9(entry: SubjectEntry): number {
@@ -51,6 +74,7 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
       coreAvg9: 0,
       estimatedTopPercent: 0,
       groupSummaries: [],
+      yearlySummaries: [],
     };
   }
 
@@ -72,6 +96,13 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
     '정보·제2외국어': { credits: 0, count: 0, sum5: 0, sum9: 0 },
   };
 
+  const gradesOrder: HighSchoolGrade[] = ['고1', '고2', '고3'];
+  const yearlyAcc: Record<HighSchoolGrade, { credits: number; count: number; sum5: number; sum9: number }> = {
+    고1: { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    고2: { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    고3: { credits: 0, count: 0, sum5: 0, sum9: 0 },
+  };
+
   for (const sub of subjects) {
     const g9 = getSubjectGrade9(sub);
     totalCredits += sub.credits;
@@ -88,6 +119,14 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
     groupAcc[sub.group].count += 1;
     groupAcc[sub.group].sum5 += sub.grade5 * sub.credits;
     groupAcc[sub.group].sum9 += g9 * sub.credits;
+
+    const gl: HighSchoolGrade = sub.gradeLevel || '고1';
+    if (yearlyAcc[gl]) {
+      yearlyAcc[gl].credits += sub.credits;
+      yearlyAcc[gl].count += 1;
+      yearlyAcc[gl].sum5 += sub.grade5 * sub.credits;
+      yearlyAcc[gl].sum9 += g9 * sub.credits;
+    }
   }
 
   const avg5 = totalCredits > 0 ? Number((weightedSum5 / totalCredits).toFixed(2)) : 0;
@@ -132,6 +171,16 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
       avg9: Number((groupAcc[g].sum9 / groupAcc[g].credits).toFixed(2)),
     }));
 
+  const yearlySummaries: YearlyGPASummary[] = gradesOrder
+    .filter((gl) => yearlyAcc[gl].count > 0)
+    .map((gl) => ({
+      gradeLevel: gl,
+      credits: yearlyAcc[gl].credits,
+      subjectCount: yearlyAcc[gl].count,
+      avg5: Number((yearlyAcc[gl].sum5 / yearlyAcc[gl].credits).toFixed(2)),
+      avg9: Number((yearlyAcc[gl].sum9 / yearlyAcc[gl].credits).toFixed(2)),
+    }));
+
   return {
     totalCredits,
     subjectCount: subjects.length,
@@ -141,6 +190,7 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
     coreAvg9,
     estimatedTopPercent,
     groupSummaries,
+    yearlySummaries,
   };
 }
 
@@ -290,15 +340,15 @@ export function calculateReachGoalAnalysis(
   const requiredImprovement5 = Number(Math.max(0.04, studentAvg5 - targetCutoff5).toFixed(2));
 
   const semesterMap: Record<HighSchoolGrade, Record<Semester, { done: number; left: number }>> = {
-    '1학년': {
+    고1: {
       '1학기': { done: 1, left: 4 },
       '2학기': { done: 2, left: 3 },
     },
-    '2학년': {
+    고2: {
       '1학기': { done: 3, left: 2 },
       '2학기': { done: 4, left: 1 },
     },
-    '3학년': {
+    고3: {
       '1학기': { done: 4, left: 1 },
       '2학기': { done: 5, left: 1 },
     },

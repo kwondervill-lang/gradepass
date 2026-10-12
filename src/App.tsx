@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_SUBJECT_PRESETS,
   DEPARTMENT_TRACKS,
+  INITIAL_HIGH_SCHOOL_SUBJECTS,
 } from './data/admissionsData';
 import {
   CompanyBranding,
@@ -15,25 +16,26 @@ import {
   calculateReachGoalAnalysis,
   calculateStudentGPA,
   evaluateUniversitiesForStudent,
+  filterSubjectsForStudentGrade,
   generateStrategicSubjectRecommendations,
 } from './utils/admissionsAnalyzer';
 import {
   FullReportPayload,
   downloadReportAsPDF,
   generateStandaloneReportHTML,
-  getSangdiLogoSvgDataUrl,
 } from './utils/reportExporter';
 import { StudentInputPanel } from './components/StudentInputPanel';
 import { ReportToolbar } from './components/ReportToolbar';
 import { ConsultingReportView } from './components/ConsultingReportView';
 import { HtmlReportModal } from './components/HtmlReportModal';
+import { BrandLogo } from './components/BrandLogo';
 
 export default function App() {
   const [studentName, setStudentName] = useState<string>('김서연');
-  const [grade, setGrade] = useState<HighSchoolGrade>('2학년');
+  const [grade, setGrade] = useState<HighSchoolGrade>('고2');
   const [semester, setSemester] = useState<Semester>('1학기');
   const [selectedTrackId, setSelectedTrackId] = useState<string>('comp-ai');
-  const [subjects, setSubjects] = useState<SubjectEntry[]>(() => DEFAULT_SUBJECT_PRESETS['2학년']);
+  const [subjects, setSubjects] = useState<SubjectEntry[]>(() => INITIAL_HIGH_SCHOOL_SUBJECTS);
   const [selectedReachUnivId, setSelectedReachUnivId] = useState<string | null>(null);
 
   // 생디 (www.sangdi.net) 공식 플랫폼 기본 브랜딩
@@ -59,7 +61,13 @@ export default function App() {
     [selectedTrackId]
   );
 
-  const gpaSummary = useMemo(() => calculateStudentGPA(subjects), [subjects]);
+  // 학생 학년에 따라 적용되는 과목 (고1: 고1 / 고2: 고1~고2 종합 / 고3: 고1~고3 종합)
+  const activeSubjects = useMemo(
+    () => filterSubjectsForStudentGrade(subjects, grade),
+    [subjects, grade]
+  );
+
+  const gpaSummary = useMemo(() => calculateStudentGPA(activeSubjects), [activeSubjects]);
 
   const { reachList, targetList, safetyList } = useMemo(
     () =>
@@ -90,13 +98,24 @@ export default function App() {
   );
 
   const { strategies, simulatedTop3Avg5, simulatedTop3Avg9, simulatedTotalGain9 } = useMemo(
-    () => generateStrategicSubjectRecommendations(subjects, selectedTrackId),
-    [subjects, selectedTrackId]
+    () => generateStrategicSubjectRecommendations(activeSubjects, selectedTrackId),
+    [activeSubjects, selectedTrackId]
   );
 
   const handleGradeChange = (newGrade: HighSchoolGrade) => {
     setGrade(newGrade);
-    setSubjects(DEFAULT_SUBJECT_PRESETS[newGrade]);
+    setSelectedReachUnivId(null);
+  };
+
+  const handleApplyGradePreset = (targetGrade: HighSchoolGrade) => {
+    setSubjects((prev) => {
+      const others = prev.filter((s) => (s.gradeLevel || '고1') !== targetGrade);
+      const defaults = DEFAULT_SUBJECT_PRESETS[targetGrade].map((p) => ({
+        ...p,
+        id: `preset-${targetGrade}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      }));
+      return [...others, ...defaults];
+    });
     setSelectedReachUnivId(null);
   };
 
@@ -155,7 +174,7 @@ export default function App() {
       grade,
       semester,
       track: selectedTrack,
-      subjects,
+      subjects: activeSubjects,
       gpaSummary,
       reachList,
       targetList,
@@ -173,7 +192,7 @@ export default function App() {
       grade,
       semester,
       selectedTrack,
-      subjects,
+      activeSubjects,
       gpaSummary,
       reachList,
       targetList,
@@ -235,14 +254,10 @@ export default function App() {
             href="https://www.sangdi.net"
             target="_blank"
             rel="noopener noreferrer"
-            title="생디 (www.sangdi.net)"
+            title="생디 (www.sangdi.net) 공식 플랫폼"
             className="flex items-center gap-1.5"
           >
-            <img
-              src={getSangdiLogoSvgDataUrl()}
-              alt="생디"
-              className="h-7 w-auto object-contain"
-            />
+            <BrandLogo branding={branding} className="h-7 w-auto" />
           </a>
           <span className="text-slate-300">|</span>
           <a
@@ -321,7 +336,7 @@ export default function App() {
               grade={grade}
               semester={semester}
               track={selectedTrack}
-              subjects={subjects}
+              subjects={activeSubjects}
               gpaSummary={gpaSummary}
               reachList={reachList}
               targetList={targetList}
@@ -351,7 +366,7 @@ export default function App() {
                 }}
                 subjects={subjects}
                 onSubjectsChange={setSubjects}
-                onApplyGradePreset={handleGradeChange}
+                onApplyGradePreset={handleApplyGradePreset}
                 onApplyScoreTierPreset={handleApplyScoreTierPreset}
               />
             </div>
@@ -362,7 +377,7 @@ export default function App() {
                 grade={grade}
                 semester={semester}
                 track={selectedTrack}
-                subjects={subjects}
+                subjects={activeSubjects}
                 gpaSummary={gpaSummary}
                 reachList={reachList}
                 targetList={targetList}
