@@ -3,16 +3,85 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>입시 내비게이터 — 생디 (www.sangdi.net)</title>
-    <meta name="description" content="내신 등급 분석으로 합격 대학을 예측하고, 목표 달성을 위한 학습 전략과 맞춤형 입시 리포트를 제공합니다." />
-    <meta property="og:title" content="입시 내비게이터 — 생디 (www.sangdi.net)" />
-    <meta property="og:description" content="내신 등급 분석으로 합격 대학을 예측하고, 목표 달성을 위한 학습 전략과 맞춤형 입시 리포트를 제공합니다." />
+    <title>입시 내비게이터 — 2028 대입개편 5등급제 내신 계산기 & 수시 합격 예측 | 생디 (www.sangdi.net)</title>
+    <meta
+      name="description"
+      content="2028 대입개편 5등급제 내신을 9등급제로 정밀 환산하고 2024·2025학년도 수시 학생부교과 70% 컷 공식 입결을 분석하여 합격 가능 대학과 맞춤 학습 전략 리포트를 제공합니다. 제작: 생디 (www.sangdi.net)"
+    />
+    <meta
+      name="keywords"
+      content="생디, sangdi, www.sangdi.net, 2028 대입개편, 5등급제 내신 계산기, 5등급제 9등급제 환산, 수시 학생부교과, 대학 입결 컷, 어디가 70%컷, 고1 고2 고3 내신, 입시 내비게이터, 학생부를 디자인하다"
+    />
+    <meta name="author" content="생디 (Sangdi www.sangdi.net)" />
+    <link rel="canonical" href="https://gradepass.vercel.app/" />
+
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://gradepass.vercel.app/" />
+    <meta property="og:title" content="입시 내비게이터 — 2028 대입개편 5등급제 내신 계산기 & 수시 합격 예측 | 생디" />
+    <meta
+      property="og:description"
+      content="2028 대입개편 5등급제 내신 정밀 환산 및 2개년 수시 학생부교과 70% 컷 공식 입결 분석 진학 리포트. 제작: 생디 (www.sangdi.net)"
+    />
+    <meta property="og:site_name" content="생디 (www.sangdi.net)" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://gradepass.vercel.app/" />
+    <meta name="twitter:title" content="입시 내비게이터 — 2028 대입개편 5등급제 내신 계산기 & 수시 합격 예측 | 생디" />
+    <meta
+      name="twitter:description"
+      content="2028 대입개편 5등급제 내신 정밀 환산 및 2개년 수시 학생부교과 70% 컷 공식 입결 분석 진학 리포트. 제작: 생디 (www.sangdi.net)"
+    />
+
     <link rel="icon" type="image/svg+xml" href="/sangdi-logo.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Google Structured Data (JSON-LD) for SEO & Google Search -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://gradepass.vercel.app/#app",
+            "name": "입시 내비게이터 (GradePass)",
+            "alternateName": "생디 2028 대입개편 5등급제 내신 계산기",
+            "url": "https://gradepass.vercel.app/",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "All",
+            "description": "2028 대입개편 5등급제 내신 계산 및 9등급제 환산, 대학·학과별 2024·2025 수시 학생부교과 70% 컷 정밀 분석 및 진학컨설팅 리포트 생성기",
+            "creator": {
+              "@type": "Organization",
+              "name": "생디 (Sangdi)",
+              "url": "https://www.sangdi.net"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "생디 (Sangdi)",
+              "url": "https://www.sangdi.net",
+              "logo": "https://gradepass.vercel.app/sangdi-logo.svg"
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://www.sangdi.net/#organization",
+            "name": "생디 (Sangdi)",
+            "url": "https://www.sangdi.net",
+            "description": "학생부를 디자인하다 · AI 기반 학생부 디자인 및 수시 학생부종합·교과 입시 전략 플랫폼",
+            "sameAs": [
+              "https://www.sangdi.net",
+              "https://gradepass.vercel.app"
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased selection:bg-blue-600 selection:text-white">
     <div id="root"></div>

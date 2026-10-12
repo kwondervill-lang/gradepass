@@ -17,6 +17,8 @@ export interface FullReportPayload {
   studentName: string;
   grade: HighSchoolGrade;
   semester: Semester;
+  targetMajor?: string;
+  targetCategory?: string;
   track: DepartmentTrack;
   subjects: SubjectEntry[];
   gpaSummary: StudentGPASummary;
@@ -163,14 +165,32 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
       )
       .join('');
 
+  const semesterBoxes = (gpaSummary.semesterSummaries || [])
+    .map(
+      (ss) => `
+    <div style="border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#F8FAFC;font-size:12px;">
+      <div style="font-weight:700;color:#0F172A;display:flex;justify-content:space-between;">
+        <span>${escapeXml(ss.label)}</span>
+        <span style="color:#64748B;font-family:monospace;font-size:11px;">${ss.subjectCount}과목 · ${ss.credits}학점</span>
+      </div>
+      <div style="margin-top:6px;display:flex;justify-content:space-between;font-family:monospace;">
+        <span style="color:#1D4ED8;font-weight:700;">5등급 ${ss.avg5.toFixed(2)}</span>
+        <span style="color:#0F172A;font-weight:600;">9등급 ${ss.avg9.toFixed(2)}</span>
+      </div>
+    </div>`
+    )
+    .join('');
+
   const subjectRows = subjects
     .map((s) => {
       const g9 = getSubjectGrade9(s);
-      const gradeBadge = s.gradeLevel
-        ? `<span style="display:inline-block;padding:1px 6px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:4px;font-size:10px;font-weight:700;margin-right:6px;">${escapeXml(
-            s.gradeLevel
-          )}</span>`
-        : '';
+      const gradeBadge = `<span style="display:inline-block;padding:1px 6px;background:${
+        s.semester === '2학기' ? '#FEF3C7' : '#EFF6FF'
+      };color:${s.semester === '2학기' ? '#B45309' : '#1D4ED8'};border:1px solid ${
+        s.semester === '2학기' ? '#FDE68A' : '#BFDBFE'
+      };border-radius:4px;font-size:10px;font-weight:700;margin-right:6px;">${escapeXml(
+        s.gradeLevel || '고1'
+      )} ${escapeXml(s.semester || '1학기')}</span>`;
       return `
       <tr>
         <td>${gradeBadge}${escapeXml(s.group)}</td>
@@ -182,34 +202,29 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
     })
     .join('');
 
-  const strategyCards = strategies
-    .slice(0, 4)
-    .map(
-      (st) => `
-    <div style="border:1px solid #E2E8F0;border-radius:8px;padding:14px;margin-bottom:10px;background:#FFFFFF;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div style="font-weight:700;font-size:14px;color:#0F172A;">
-          0${st.priorityRank}. ${escapeXml(st.subjectName)} <span style="font-weight:500;color:#64748B;font-size:12px;">(${escapeXml(
-        st.group
-      )} · ${st.credits}학점${st.isMajorCore ? ' · 전공핵심' : ''})</span>
-        </div>
-        <div style="font-family:monospace;font-size:12px;font-weight:700;color:#1D4ED8;">
-          현재 5등급제 ${st.currentGrade5}등급(${st.currentGrade9.toFixed(2)}) → 목표 ${
-        st.targetGrade5
-      }등급(${st.targetGrade9.toFixed(2)}) · 전체평균 -${st.expectedGrade9Improvement.toFixed(2)}등급 상승효과
-        </div>
-      </div>
-      <p style="margin:4px 0;font-size:12px;color:#334155;line-height:1.5;"><strong>선정 사유:</strong> ${escapeXml(
-        st.reasonSummary
-      )}</p>
-      <p style="margin:4px 0;font-size:12px;color:#334155;line-height:1.5;"><strong>지필·내신 전략:</strong> ${escapeXml(
-        st.examStrategy
-      )}</p>
-      <p style="margin:4px 0;font-size:12px;color:#334155;line-height:1.5;"><strong>세특·수행 전략:</strong> ${escapeXml(
-        st.performanceAndSeteukStrategy
-      )} · <strong>주간 루틴:</strong> ${escapeXml(st.weeklyActionPlan)}</p>
-    </div>`
-    )
+  const reachGoalTableRows = reachList
+    .map((rec) => {
+      const isAlt = rec.matchType === '선택계열 상향추천 (합격유망)' || rec.matchType.includes('상향추천');
+      const req9 = Number(Math.max(0.05, gpaSummary.avg9 - rec.avgCutoff9).toFixed(2));
+      const req5 = Number(Math.max(0.04, gpaSummary.avg5 - rec.equivalentCutoff5).toFixed(2));
+      const rem = reachGoal.remainingSemesters;
+      const comp = reachGoal.completedSemesters;
+      const tot = rem + comp;
+      const fut5 = Math.max(1.0, Math.min(gpaSummary.avg5, (rec.equivalentCutoff5 * tot - gpaSummary.avg5 * comp) / rem));
+      return `
+      <tr>
+        <td><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;${
+          isAlt ? 'background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;' : 'background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;'
+        }">${isAlt ? '계열추천' : '희망학과'}</span></td>
+        <td style="font-weight:700;color:#0F172A;">${escapeXml(rec.university)}</td>
+        <td style="font-weight:600;color:#1E293B;">${escapeXml(rec.department)}</td>
+        <td style="color:#475569;font-size:12px;">${escapeXml(rec.admissionType)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:#1D4ED8;">${rec.avgCutoff9.toFixed(2)} (${rec.equivalentCutoff5.toFixed(2)})</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:#D97706;">-${req9.toFixed(2)} (-${req5.toFixed(2)})</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:#059669;">5등급 ${fut5.toFixed(2)}</td>
+        <td style="font-size:11px;color:#475569;">${escapeXml(rec.csatMinimum)} (충원율 ${rec.replenishRate2025}%)</td>
+      </tr>`;
+    })
     .join('');
 
   return `<!DOCTYPE html>
@@ -331,9 +346,13 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
           studentName
         )} 학생 · ${escapeXml(grade)} ${escapeXml(semester)} 수시 학생부교과 진학분석 리포트</h1>
         <div style="font-size:13px;color:#475569;margin-top:6px;">
-          희망 학과: <strong>${escapeXml(track.name)}</strong> · 유사 분석 학과: ${escapeXml(
-    track.relatedDepartments.join(', ')
-  )}
+          희망 학과: <strong style="color:#0F172A;">${escapeXml(payload.targetMajor || track.name)}</strong> · 계열: ${escapeXml(
+    payload.targetCategory || track.category
+  )}${
+    track.relatedDepartments.length > 0
+      ? ` · 유사 분석 학과: ${escapeXml(track.relatedDepartments.slice(0, 4).join(', '))}`
+      : ''
+  }
         </div>
       </div>
       <div style="text-align:right;">
@@ -383,7 +402,12 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
       </div>
     </div>
 
-    <h2>01. 입력 교과목 5등급제 성적 및 9등급제 정밀 환산 결과</h2>
+    <h2>01. 학기별·학년별 내신 성적 구성 및 9등급제 정밀 환산 결과</h2>
+    ${
+      semesterBoxes
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:10px;margin-bottom:16px;">${semesterBoxes}</div>`
+        : ''
+    }
     <table>
       <thead>
         <tr>
@@ -422,7 +446,7 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
       </tbody>
     </table>
 
-    <h2>03. 상향지원 대학 합격을 위한 목표 내신 등급 분석</h2>
+    <h2>03. 상향지원 대학 합격을 위한 목표 내신 등급 및 필요 상승폭 분석</h2>
     <div class="goal-banner">
       <div style="font-weight:700;font-size:14px;color:#1E3A8A;margin-bottom:6px;">
         목표 대학: ${escapeXml(reachGoal.targetUniversityName)} ${escapeXml(
@@ -432,15 +456,26 @@ export function generateStandaloneReportHTML(payload: FullReportPayload): string
       <div style="font-size:13px;color:#1E293B;line-height:1.6;">
         ${escapeXml(reachGoal.summaryAdvice)}
       </div>
-      <div style="font-size:12px;color:#1D4ED8;margin-top:8px;font-weight:600;">
-        전략 과목 TOP 3 집중 상승 시 예상 내신: 5등급제 ${simulatedTop3Avg5.toFixed(
-          2
-        )}등급 / 9등급제 ${simulatedTop3Avg9.toFixed(2)}등급 (현재 대비 -${simulatedTotalGain9.toFixed(2)}등급 단축)
-      </div>
     </div>
 
-    <h2>04. 상향대학 합격을 위해 내신 등급을 올리기 좋은 전략 교과목 & 맞춤 학습 전략</h2>
-    ${strategyCards}
+    <h3 style="font-size:15px;margin:20px 0 8px 0;color:#0F172A;">• 상향지원 목표 대학 및 선택계열 추천 학과 시뮬레이션 비교표 (총 ${reachList.length}개)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>대학명</th>
+          <th>모집단위 (학과)</th>
+          <th>전형유형</th>
+          <th style="text-align:right;">2개년 평균컷 (5등급)</th>
+          <th style="text-align:right;">필요 상승폭 (9등급 / 5등급)</th>
+          <th style="text-align:right;">남은 ${reachGoal.remainingSemesters}학기 목표</th>
+          <th>수능최저학력기준 및 충원율</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${reachGoalTableRows}
+      </tbody>
+    </table>
 
     <div class="footer">
       <div>제작 플랫폼: <strong>생디</strong> (<a href="https://www.sangdi.net" target="_blank" class="sangdi-badge">www.sangdi.net</a>) · 담당: ${escapeXml(
@@ -716,8 +751,14 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
 
     ctx.fillStyle = '#475569';
     ctx.font = '500 20px "Noto Sans KR", sans-serif';
+    const majorDisplay = payload.targetMajor || payload.track.name;
+    const catDisplay = payload.targetCategory || payload.track.category;
     ctx.fillText(
-      `희망 학과: ${payload.track.name}  |  유사 분석 학과: ${payload.track.relatedDepartments.slice(0, 4).join(', ')}`,
+      `희망 학과: ${majorDisplay}  |  계열: ${catDisplay}${
+        payload.track.relatedDepartments.length > 0
+          ? `  |  유사 분석: ${payload.track.relatedDepartments.slice(0, 3).join(', ')}`
+          : ''
+      }`,
       80,
       204
     );
@@ -841,7 +882,7 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
       const g9 = getSubjectGrade9(leftSub);
       ctx1.fillStyle = '#0F172A';
       ctx1.font = '600 17px "Noto Sans KR", sans-serif';
-      ctx1.fillText(`[${leftSub.gradeLevel || '고1'}] [${leftSub.group}] ${leftSub.name}`, 100, curY + 25);
+      ctx1.fillText(`[${leftSub.gradeLevel || '고1'} ${leftSub.semester || '1학기'}] [${leftSub.group}] ${leftSub.name}`, 100, curY + 25);
       ctx1.fillStyle = '#475569';
       ctx1.font = '500 17px "JetBrains Mono", monospace';
       ctx1.fillText(`${leftSub.credits}학점`, 430, curY + 25);
@@ -856,7 +897,7 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
       const g9 = getSubjectGrade9(rightSub);
       ctx1.fillStyle = '#0F172A';
       ctx1.font = '600 17px "Noto Sans KR", sans-serif';
-      ctx1.fillText(`[${rightSub.gradeLevel || '고1'}] [${rightSub.group}] ${rightSub.name}`, 820, curY + 25);
+      ctx1.fillText(`[${rightSub.gradeLevel || '고1'} ${rightSub.semester || '1학기'}] [${rightSub.group}] ${rightSub.name}`, 820, curY + 25);
       ctx1.fillStyle = '#475569';
       ctx1.font = '500 17px "JetBrains Mono", monospace';
       ctx1.fillText(`${rightSub.credits}학점`, 1150, curY + 25);
@@ -957,113 +998,161 @@ export async function downloadReportAsPDF(payload: FullReportPayload): Promise<v
   y2 += 24;
 
   ctx2.fillStyle = '#EFF6FF';
-  ctx2.fillRect(80, y2, W - 160, 210);
+  ctx2.fillRect(80, y2, W - 160, 190);
   ctx2.strokeStyle = '#93C5FD';
   ctx2.lineWidth = 2;
-  ctx2.strokeRect(80, y2, W - 160, 210);
+  ctx2.strokeRect(80, y2, W - 160, 190);
 
   ctx2.fillStyle = '#1E3A8A';
   ctx2.font = '700 22px "Noto Sans KR", sans-serif';
   ctx2.fillText(
-    `목표 상향대학: ${payload.reachGoal.targetUniversityName} ${payload.reachGoal.targetDepartmentName} (${payload.reachGoal.targetAdmissionType})`,
+    `목표 상향대학: ${payload.reachGoal.targetUniversityName} ${payload.reachGoal.targetDepartmentName} (${payload.reachGoal.targetAdmissionType})  [진단: ${payload.reachGoal.feasibilityLabel}]`,
     110,
     y2 + 44
   );
 
   ctx2.fillStyle = '#1D4ED8';
-  ctx2.font = '700 20px "JetBrains Mono", "Noto Sans KR", sans-serif';
+  ctx2.font = '700 19px "JetBrains Mono", "Noto Sans KR", sans-serif';
   ctx2.fillText(
-    `현재 9등급제 ${payload.reachGoal.currentAvg9.toFixed(2)}등급 (5등급제 ${payload.reachGoal.currentAvg5.toFixed(
+    `현재 9등급제 ${payload.reachGoal.currentAvg9.toFixed(2)}등급 (5등급 ${payload.reachGoal.currentAvg5.toFixed(
       2
-    )}등급)  →  합격 목표 9등급제 ${payload.reachGoal.targetCutoff9.toFixed(
+    )})  →  목표 9등급제 ${payload.reachGoal.targetCutoff9.toFixed(
       2
-    )}등급 (5등급제 ${payload.reachGoal.targetCutoff5.toFixed(2)}등급)  [필요 상승폭: -${payload.reachGoal.requiredImprovement9.toFixed(
+    )}등급 (5등급 ${payload.reachGoal.targetCutoff5.toFixed(2)})  ·  필요 상승폭: -${payload.reachGoal.requiredImprovement9.toFixed(
       2
-    )}등급]`,
+    )}등급 (5등급 -${payload.reachGoal.requiredImprovement5.toFixed(2)})`,
     110,
-    y2 + 88
+    y2 + 86
   );
 
   ctx2.fillStyle = '#1E293B';
-  ctx2.font = '500 19px "Noto Sans KR", sans-serif';
+  ctx2.font = '500 18px "Noto Sans KR", sans-serif';
   const wrappedAdvice = wrapKoreanText(ctx2, payload.reachGoal.summaryAdvice, W - 220);
   wrappedAdvice.slice(0, 2).forEach((line, idx) => {
-    ctx2.fillText(line, 110, y2 + 132 + idx * 30);
+    ctx2.fillText(line, 110, y2 + 128 + idx * 28);
   });
 
-  ctx2.fillStyle = '#059669';
-  ctx2.font = '700 19px "Noto Sans KR", sans-serif';
-  ctx2.fillText(
-    `★ 전략 과목 상위 3과목 목표 달성 시 시뮬레이션: 5등급제 ${payload.simulatedTop3Avg5.toFixed(
-      2
-    )}등급 / 9등급제 ${payload.simulatedTop3Avg9.toFixed(2)}등급 달성 (-${payload.simulatedTotalGain9.toFixed(
-      2
-    )}등급 단축)`,
-    110,
-    y2 + 190
-  );
-
-  y2 += 260;
+  y2 += 225;
 
   ctx2.fillStyle = '#0F172A';
-  ctx2.font = '700 26px "Noto Sans KR", sans-serif';
-  ctx2.fillText('04. 상향대학 합격을 위해 내신 등급을 올리기 좋은 전략 교과목 & 맞춤 학습 전략', 80, y2);
-  y2 += 24;
+  ctx2.font = '700 24px "Noto Sans KR", sans-serif';
+  ctx2.fillText(
+    `상향지원 목표 대학 및 선택계열 추천 학과 시뮬레이션 비교표 (총 ${payload.reachList.length}개 모집단위)`,
+    80,
+    y2
+  );
+  y2 += 26;
 
-  payload.strategies.slice(0, 4).forEach((st) => {
-    const boxH = 340;
-    ctx2.fillStyle = '#FFFFFF';
-    ctx2.fillRect(80, y2, W - 160, boxH);
-    ctx2.strokeStyle = '#CBD5E1';
-    ctx2.lineWidth = 2;
-    ctx2.strokeRect(80, y2, W - 160, boxH);
+  // 테이블 헤더
+  ctx2.fillStyle = '#F8FAFC';
+  ctx2.fillRect(80, y2, W - 160, 44);
+  ctx2.strokeStyle = '#E2E8F0';
+  ctx2.lineWidth = 1;
+  ctx2.strokeRect(80, y2, W - 160, 44);
 
-    ctx2.fillStyle = '#F8FAFC';
-    ctx2.fillRect(82, y2 + 2, W - 164, 58);
+  ctx2.fillStyle = '#475569';
+  ctx2.font = '700 15px "Noto Sans KR", sans-serif';
+  ctx2.fillText('구분', 100, y2 + 28);
+  ctx2.fillText('대학명', 210, y2 + 28);
+  ctx2.fillText('모집단위 (학과)', 390, y2 + 28);
+  ctx2.fillText('전형유형', 680, y2 + 28);
+  ctx2.fillText('2개년컷(5등급)', 950, y2 + 28);
+  ctx2.fillText('필요 상승폭', 1140, y2 + 28);
+  ctx2.fillText('잔여학기목표', 1300, y2 + 28);
+  ctx2.fillText('수능최저·충원', 1450, y2 + 28);
 
+  y2 += 44;
+
+  const remSem = payload.reachGoal.remainingSemesters;
+  const compSem = payload.reachGoal.completedSemesters;
+  const totSem = remSem + compSem;
+
+  payload.reachList.slice(0, 18).forEach((r, idx) => {
+    const rowH = 46;
+    ctx2.fillStyle = idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA';
+    ctx2.fillRect(80, y2, W - 160, rowH);
+    ctx2.strokeStyle = '#F1F5F9';
+    ctx2.strokeRect(80, y2, W - 160, rowH);
+
+    const isAlt = r.matchType === '선택계열 상향추천 (합격유망)' || r.matchType.includes('상향추천');
+    const req9 = Number(Math.max(0.05, payload.gpaSummary.avg9 - r.avgCutoff9).toFixed(2));
+    const fut5 = Math.max(
+      1.0,
+      Math.min(
+        payload.gpaSummary.avg5,
+        (r.equivalentCutoff5 * totSem - payload.gpaSummary.avg5 * compSem) / remSem
+      )
+    );
+
+    // 구분 배지
+    ctx2.fillStyle = isAlt ? '#FEF3C7' : '#EFF6FF';
+    ctx2.fillRect(100, y2 + 10, 76, 26);
+    ctx2.fillStyle = isAlt ? '#92400E' : '#1D4ED8';
+    ctx2.font = '700 13px "Noto Sans KR", sans-serif';
+    ctx2.fillText(isAlt ? '계열추천' : '희망학과', 112, y2 + 28);
+
+    // 대학명
     ctx2.fillStyle = '#0F172A';
-    ctx2.font = '700 22px "Noto Sans KR", sans-serif';
-    ctx2.fillText(
-      `우선순위 0${st.priorityRank}. ${st.subjectName} (${st.group} · ${st.credits}학점${
-        st.isMajorCore ? ' · 희망전공 핵심권장과목' : ''
-      })`,
-      108,
-      y2 + 40
-    );
+    ctx2.font = '700 16px "Noto Sans KR", sans-serif';
+    ctx2.fillText(r.university, 210, y2 + 29);
 
+    // 모집단위
+    ctx2.fillStyle = '#334155';
+    ctx2.font = '600 15px "Noto Sans KR", sans-serif';
+    ctx2.fillText(r.department.slice(0, 18), 390, y2 + 29);
+
+    // 전형유형
+    ctx2.fillStyle = '#64748B';
+    ctx2.font = '500 14px "Noto Sans KR", sans-serif';
+    ctx2.fillText(r.admissionType.slice(0, 16), 680, y2 + 29);
+
+    // 2개년 컷
     ctx2.fillStyle = '#1D4ED8';
-    ctx2.font = '700 20px "JetBrains Mono", "Noto Sans KR", sans-serif';
-    ctx2.textAlign = 'right';
-    ctx2.fillText(
-      `5등급제 ${st.currentGrade5}등급(${st.currentGrade9.toFixed(2)}) → ${
-        st.targetGrade5
-      }등급(${st.targetGrade9.toFixed(2)})  [전체 평균 -${st.expectedGrade9Improvement.toFixed(2)}등급 향상]`,
-      W - 108,
-      y2 + 40
-    );
-    ctx2.textAlign = 'left';
+    ctx2.font = '700 15px "JetBrains Mono", monospace';
+    ctx2.fillText(`${r.avgCutoff9.toFixed(2)} (${r.equivalentCutoff5.toFixed(2)})`, 950, y2 + 29);
 
-    let innerY = y2 + 95;
-    const drawParagraph = (label: string, content: string, labelColor: string) => {
-      ctx2.fillStyle = labelColor;
-      ctx2.font = '700 18px "Noto Sans KR", sans-serif';
-      ctx2.fillText(`• ${label}:`, 108, innerY);
+    // 필요 상승폭
+    ctx2.fillStyle = '#D97706';
+    ctx2.font = '700 15px "JetBrains Mono", monospace';
+    ctx2.fillText(`-${req9.toFixed(2)}`, 1140, y2 + 29);
 
-      ctx2.fillStyle = '#334155';
-      ctx2.font = '500 18px "Noto Sans KR", sans-serif';
-      const lines = wrapKoreanText(ctx2, content, W - 380);
-      lines.slice(0, 2).forEach((ln, lIdx) => {
-        ctx2.fillText(ln, 265, innerY + lIdx * 28);
-      });
-      innerY += Math.max(1, Math.min(2, lines.length)) * 28 + 18;
-    };
+    // 잔여학기 목표
+    ctx2.fillStyle = '#059669';
+    ctx2.font = '700 15px "JetBrains Mono", monospace';
+    ctx2.fillText(`5등급 ${fut5.toFixed(2)}`, 1300, y2 + 29);
 
-    drawParagraph('전략 선정 근거', st.reasonSummary, '#0F172A');
-    drawParagraph('지필고사 전략', st.examStrategy, '#1D4ED8');
-    drawParagraph('수행·세특 전략', `${st.performanceAndSeteukStrategy} (${st.weeklyActionPlan})`, '#059669');
+    // 수능최저 / 충원율
+    ctx2.fillStyle = '#475569';
+    ctx2.font = '500 13px "Noto Sans KR", monospace';
+    ctx2.fillText(`충원 ${r.replenishRate2025}%`, 1450, y2 + 29);
 
-    y2 += boxH + 22;
+    y2 += rowH;
   });
+
+  // 하단 전략 가이드 박스
+  y2 += 20;
+  ctx2.fillStyle = '#F8FAFC';
+  ctx2.fillRect(80, y2, W - 160, 120);
+  ctx2.strokeStyle = '#CBD5E1';
+  ctx2.lineWidth = 1;
+  ctx2.strokeRect(80, y2, W - 160, 120);
+
+  ctx2.fillStyle = '#0F172A';
+  ctx2.font = '700 16px "Noto Sans KR", sans-serif';
+  ctx2.fillText('💡 수시 학생부교과 상향·도전 지원 핵심 전략 가이드', 105, y2 + 32);
+
+  ctx2.fillStyle = '#334155';
+  ctx2.font = '500 14px "Noto Sans KR", sans-serif';
+  ctx2.fillText(
+    '1. 수시 6장 카드 배분: 희망학과 3장 + 동일 계열 추천학과 2~3장을 적절히 배분하여 소신 지원 시 최종 합격 가능성을 극대화하세요.',
+    105,
+    y2 + 62
+  );
+  ctx2.fillText(
+    '2. 수능최저학력기준 충족 여부가 실질 경쟁률을 1/2 이하로 낮추므로 교과 성적 관리와 함께 수능 학습을 반드시 병행해야 합니다.',
+    105,
+    y2 + 88
+  );
 
   const jpeg1 = canvas1.toDataURL('image/jpeg', 0.92);
   const jpeg2 = canvas2.toDataURL('image/jpeg', 0.92);

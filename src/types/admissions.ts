@@ -7,7 +7,7 @@ export type SubBand = '상' | '중' | '하';
 export interface SubjectEntry {
   id: string;
   gradeLevel: HighSchoolGrade; // '고1' | '고2' | '고3'
-  semester?: Semester; // '1학기' | '2학기'
+  semester: Semester; // '1학기' | '2학기'
   group: SubjectGroup;
   name: string;
   credits: number;
@@ -18,18 +18,25 @@ export interface SubjectEntry {
 export interface DepartmentTrack {
   id: string;
   name: string;
-  category: '공학계열' | '자연·이학계열' | '의약·간호계열' | '상경·경영계열' | '사회과학계열' | '인문·교육계열';
+  category: string;
   relatedDepartments: string[];
   coreSubjectGroups: SubjectGroup[];
   recommendedCourses: string[];
   description: string;
 }
 
+export interface StudentAdmissionTarget {
+  majorName: string;
+  category: string;
+  relatedDepartments?: string[];
+  trackId?: string;
+}
+
 export interface UniversityAdmissionRecord {
   id: string;
   university: string;
   department: string;
-  matchType: '희망학과 일치' | '유사·인접학과';
+  matchType: '희망학과 일치' | '유사·인접학과' | '선택계열 상향추천 (합격유망)';
   trackId: string;
   admissionType: string;
   region: '서울' | '수도권' | '거점국립·지방';

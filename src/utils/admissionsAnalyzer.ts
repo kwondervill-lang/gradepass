@@ -2,7 +2,9 @@ import {
   DEPARTMENT_TRACKS,
   GRADE5_TO_GRADE9_MAP,
   SUBJECT_GROUP_STUDY_GUIDES,
+  buildDynamicTrack,
   convert9To5Equivalent,
+  getAdmissionRecordsForStudentTarget,
   getAdmissionRecordsForTrack,
 } from '../data/admissionsData';
 import {
@@ -33,6 +35,16 @@ export interface YearlyGPASummary {
   avg9: number;
 }
 
+export interface SemesterGPASummary {
+  gradeLevel: HighSchoolGrade;
+  semester: Semester;
+  label: string; // 예: '고1 1학기', '고2 2학기'
+  credits: number;
+  subjectCount: number;
+  avg5: number;
+  avg9: number;
+}
+
 export interface StudentGPASummary {
   totalCredits: number;
   subjectCount: number;
@@ -43,6 +55,7 @@ export interface StudentGPASummary {
   estimatedTopPercent: number;
   groupSummaries: GroupSummary[];
   yearlySummaries: YearlyGPASummary[];
+  semesterSummaries: SemesterGPASummary[];
 }
 
 export function getActiveGradesForStudent(studentGrade: HighSchoolGrade): HighSchoolGrade[] {
@@ -53,10 +66,27 @@ export function getActiveGradesForStudent(studentGrade: HighSchoolGrade): HighSc
 
 export function filterSubjectsForStudentGrade(
   subjects: SubjectEntry[],
-  studentGrade: HighSchoolGrade
+  studentGrade: HighSchoolGrade,
+  studentSemester?: Semester,
+  calculateAllEntered: boolean = true
 ): SubjectEntry[] {
   const activeGrades = getActiveGradesForStudent(studentGrade);
-  return subjects.filter((s) => activeGrades.includes(s.gradeLevel || '고1'));
+  return subjects.filter((s) => {
+    // 1. 학생의 현재 학년을 초과하는 미래 학년의 성적은 절대 포함하지 않음
+    // (예: 현재 고1이면 고2·고3 성적 완전 제외, 현재 고2이면 고3 성적 완전 제외)
+    if (!activeGrades.includes(s.gradeLevel)) {
+      return false;
+    }
+
+    // 2. 현재 학년에서 아직 시작되지 않은 미래 학기 필터링:
+    // 학생이 현재 '1학기'인 경우 (예: 고1 1학기, 고2 1학기), 현재 학년의 '2학기'는 아직 도래하지 않은 미래 학기이므로 제외
+    if (s.gradeLevel === studentGrade && studentSemester === '1학기' && s.semester === '2학기') {
+      return false;
+    }
+
+    // 3. 학생이 실제로 입력한 교과목만 집계 계산에 포함
+    return true;
+  });
 }
 
 export function getSubjectGrade9(entry: SubjectEntry): number {
@@ -75,6 +105,7 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
       estimatedTopPercent: 0,
       groupSummaries: [],
       yearlySummaries: [],
+      semesterSummaries: [],
     };
   }
 
@@ -103,6 +134,24 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
     고3: { credits: 0, count: 0, sum5: 0, sum9: 0 },
   };
 
+  const semesterOrder: Array<{ gradeLevel: HighSchoolGrade; semester: Semester; label: string }> = [
+    { gradeLevel: '고1', semester: '1학기', label: '고1 1학기' },
+    { gradeLevel: '고1', semester: '2학기', label: '고1 2학기' },
+    { gradeLevel: '고2', semester: '1학기', label: '고2 1학기' },
+    { gradeLevel: '고2', semester: '2학기', label: '고2 2학기' },
+    { gradeLevel: '고3', semester: '1학기', label: '고3 1학기' },
+    { gradeLevel: '고3', semester: '2학기', label: '고3 2학기' },
+  ];
+
+  const semesterAcc: Record<string, { credits: number; count: number; sum5: number; sum9: number }> = {
+    '고1 1학기': { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    '고1 2학기': { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    '고2 1학기': { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    '고2 2학기': { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    '고3 1학기': { credits: 0, count: 0, sum5: 0, sum9: 0 },
+    '고3 2학기': { credits: 0, count: 0, sum5: 0, sum9: 0 },
+  };
+
   for (const sub of subjects) {
     const g9 = getSubjectGrade9(sub);
     totalCredits += sub.credits;
@@ -126,6 +175,15 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
       yearlyAcc[gl].count += 1;
       yearlyAcc[gl].sum5 += sub.grade5 * sub.credits;
       yearlyAcc[gl].sum9 += g9 * sub.credits;
+    }
+
+    const sem: Semester = sub.semester || '1학기';
+    const semKey = `${gl} ${sem}`;
+    if (semesterAcc[semKey]) {
+      semesterAcc[semKey].credits += sub.credits;
+      semesterAcc[semKey].count += 1;
+      semesterAcc[semKey].sum5 += sub.grade5 * sub.credits;
+      semesterAcc[semKey].sum9 += g9 * sub.credits;
     }
   }
 
@@ -181,6 +239,18 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
       avg9: Number((yearlyAcc[gl].sum9 / yearlyAcc[gl].credits).toFixed(2)),
     }));
 
+  const semesterSummaries: SemesterGPASummary[] = semesterOrder
+    .filter((so) => semesterAcc[so.label].count > 0)
+    .map((so) => ({
+      gradeLevel: so.gradeLevel,
+      semester: so.semester,
+      label: so.label,
+      credits: semesterAcc[so.label].credits,
+      subjectCount: semesterAcc[so.label].count,
+      avg5: Number((semesterAcc[so.label].sum5 / semesterAcc[so.label].credits).toFixed(2)),
+      avg9: Number((semesterAcc[so.label].sum9 / semesterAcc[so.label].credits).toFixed(2)),
+    }));
+
   return {
     totalCredits,
     subjectCount: subjects.length,
@@ -191,6 +261,7 @@ export function calculateStudentGPA(subjects: SubjectEntry[]): StudentGPASummary
     estimatedTopPercent,
     groupSummaries,
     yearlySummaries,
+    semesterSummaries,
   };
 }
 
@@ -202,11 +273,12 @@ export interface CategorizedUniversityLists {
 }
 
 export function evaluateUniversitiesForStudent(
-  trackId: string,
+  targetMajorOrTrackId: string,
   studentAvg9: number,
-  studentAvg5: number
+  studentAvg5: number,
+  targetCategory?: string
 ): CategorizedUniversityLists {
-  const rawRecords = getAdmissionRecordsForTrack(trackId);
+  const rawRecords = getAdmissionRecordsForStudentTarget(targetMajorOrTrackId, targetCategory);
 
   const evaluated: EvaluatedUniversityRecord[] = rawRecords.map((rec) => {
     const avgCutoff9 = Number(((rec.cutoff2024_9 + rec.cutoff2025_9) / 2).toFixed(2));
@@ -220,22 +292,25 @@ export function evaluateUniversitiesForStudent(
     let probabilityPercent: number;
     let analysisComment: string;
 
-    if (gap9 > 0.14) {
+    // gap9 = studentAvg - cutoff
+    // positive means student grade is numerically higher (worse grade) -> reach
+    // negative means student grade is numerically lower (better grade) -> safety
+    if (gap9 > 0.25) {
       category = '상향지원';
-      const rawProb = Math.round(52 - (gap9 - 0.14) * 45);
-      probabilityPercent = Math.max(12, Math.min(48, rawProb));
+      const rawProb = Math.round(48 - (gap9 - 0.25) * 35);
+      probabilityPercent = Math.max(10, Math.min(48, rawProb));
       analysisComment = `2개년 70%컷(${avgCutoff9}등급) 대비 9등급제 ${gap9.toFixed(
         2
       )}등급 상향 필요 · 충원율(${rec.replenishRate2025}%) 및 수능최저 충족 시 도전 가능`;
-    } else if (gap9 >= -0.20 && gap9 <= 0.14) {
+    } else if (gap9 >= -0.28 && gap9 <= 0.25) {
       category = '적정지원';
-      const rawProb = Math.round(68 - gap9 * 60);
-      probabilityPercent = Math.max(50, Math.min(82, rawProb));
+      const rawProb = Math.round(68 - gap9 * 50);
+      probabilityPercent = Math.max(50, Math.min(84, rawProb));
       analysisComment = `2개년 70%컷(${avgCutoff9}등급)과 근접한 적정 지원권 · ${rec.csatMinimum} 충족 시 합격 유력`;
     } else {
       category = '안정지원';
-      const rawProb = Math.round(85 + Math.min(13, Math.abs(gap9 + 0.20) * 20));
-      probabilityPercent = Math.max(84, Math.min(98, rawProb));
+      const rawProb = Math.round(85 + Math.min(13, Math.abs(gap9 + 0.28) * 18));
+      probabilityPercent = Math.max(85, Math.min(98, rawProb));
       analysisComment = `2개년 70%컷(${avgCutoff9}등급) 대비 ${Math.abs(gap9).toFixed(
         2
       )}등급 여유 확보 · 안정권`;
@@ -254,45 +329,113 @@ export function evaluateUniversitiesForStudent(
     };
   });
 
-  const allReach = evaluated
-    .filter((r) => r.category === '상향지원')
-    .sort((a, b) => a.gap9 - b.gap9);
+  // 1. 희망학과 일치 레코드와 계열 내 기타 학과 레코드 분리
+  const exactMajorEvaluated = evaluated.filter((r) => r.matchType === '희망학과 일치');
+  const otherCategoryEvaluated = evaluated.filter((r) => r.matchType !== '희망학과 일치');
 
-  const allTarget = evaluated
+  // 적정지원 (Target): 유저 요청 원칙 - 학생이 입력한 희망학과 최우선 + 적정지원 개수도 상향/안정처럼 풍부하게(최대 8개) 제공
+  let targetList = exactMajorEvaluated
     .filter((r) => r.category === '적정지원')
     .sort((a, b) => a.avgCutoff9 - b.avgCutoff9);
 
-  const allSafety = evaluated
+  // 만약 희망학과 내 적정지원 개수가 부족한 경우, 학생 성적과 가까운 순으로 보충하여 6~8개 확보
+  if (targetList.length < 8 && exactMajorEvaluated.length > 0) {
+    const existingIds = new Set(targetList.map((t) => t.id));
+    const closestExact = [...exactMajorEvaluated]
+      .filter((r) => !existingIds.has(r.id) && Math.abs(r.gap9) <= 0.45)
+      .sort((a, b) => Math.abs(a.gap9) - Math.abs(b.gap9));
+
+    for (const item of closestExact) {
+      if (targetList.length >= 8) break;
+      targetList.push({
+        ...item,
+        category: '적정지원',
+        analysisComment: item.analysisComment.includes('적정')
+          ? item.analysisComment
+          : `2개년 70%컷(${item.avgCutoff9}등급) 근접 적정 지원 가능권 · ${item.csatMinimum} 충족 시 안정적 합격권`,
+      });
+      existingIds.add(item.id);
+    }
+  }
+
+  // 만약 희망학과만으로 6개 미만일 경우, 선택계열 내 적정 구간(Math.abs(gap) <= 0.30) 인접학과로 보충
+  if (targetList.length < 6 && otherCategoryEvaluated.length > 0) {
+    const existingIds = new Set(targetList.map((t) => t.id));
+    const closestOther = [...otherCategoryEvaluated]
+      .filter((r) => !existingIds.has(r.id) && Math.abs(r.gap9) <= 0.30)
+      .sort((a, b) => Math.abs(a.gap9) - Math.abs(b.gap9));
+
+    for (const item of closestOther) {
+      if (targetList.length >= 8) break;
+      targetList.push({
+        ...item,
+        category: '적정지원',
+        analysisComment: `[${targetCategory || '선택계열'} 적정추천] 2개년 70%컷(${item.avgCutoff9}등급) 근접 적정 합격 유망권`,
+      });
+      existingIds.add(item.id);
+    }
+  }
+
+  targetList.sort((a, b) => a.avgCutoff9 - b.avgCutoff9);
+  targetList = targetList.slice(0, 8);
+
+  // 안정지원 (Safety): 오직 학생이 입력한 희망학과 중심으로 구성 (최대 8개)
+  let safetyList = exactMajorEvaluated
     .filter((r) => r.category === '안정지원')
     .sort((a, b) => a.avgCutoff9 - b.avgCutoff9);
 
-  let reachList = allReach.slice(0, 8);
-  let targetList = allTarget.slice(0, 8);
-  let safetyList = allSafety.slice(0, 8);
+  if (safetyList.length === 0 && exactMajorEvaluated.length > 0) {
+    safetyList = [...exactMajorEvaluated]
+      .slice(-6)
+      .map((item) => ({ ...item, category: '안정지원' as SupportCategory }));
+  } else {
+    safetyList = safetyList.slice(0, 8);
+  }
 
-  if (reachList.length === 0 && evaluated.length > 0) {
-    reachList = evaluated.slice(0, 4).map((item) => ({
+  // 상향지원 (Reach):
+  // 1) 학생이 입력한 희망학과 상향 대학 (우선순위 1)
+  const exactReach = exactMajorEvaluated
+    .filter((r) => r.category === '상향지원')
+    .sort((a, b) => a.avgCutoff9 - b.avgCutoff9);
+
+  let exactReachList = exactReach.slice(0, 6);
+  if (exactReachList.length === 0 && exactMajorEvaluated.length > 0) {
+    exactReachList = exactMajorEvaluated.slice(0, 5).map((item) => ({
       ...item,
-      category: '상향지원',
+      category: '상향지원' as SupportCategory,
       analysisComment: `최상위 모집단위 소신 지원권 (작년 50%컷 ${item.cutoff2025_50_9}등급 기준 경합)`,
     }));
   }
 
-  if (targetList.length === 0 && evaluated.length > 0) {
-    const closest = [...evaluated].sort((a, b) => Math.abs(a.gap9) - Math.abs(b.gap9)).slice(0, 6);
-    targetList = closest.map((item) => ({
-      ...item,
-      category: '적정지원',
-    }));
+  // 2) 유저 요청:
+  // "계열 추천 상향 목표 학과의 경우는 내신 등급 차이가 너무 큰 곳의 경우는 추천에서 제외해주세요. 학생이 어느 정도 가능한 대학과 학과를 계열 추천으로 넣어주세요."
+  // 내신 격차가 너무 큰 곳(gap > 0.48~0.50 이상)은 현실적으로 합격이 불가능하므로 엄격히 제외하고,
+  // 잔여 학기 집중 및 수능최저/충원율로 극복 가능한 실현 가능 상향 도전권(gap9: +0.02 ~ +0.48)만 선별 추천
+  const MAX_REACHABLE_GAP = 0.48;
+
+  let altCategoryReachCandidates = otherCategoryEvaluated
+    .filter((r) => r.gap9 >= 0.02 && r.gap9 <= MAX_REACHABLE_GAP)
+    .sort((a, b) => a.gap9 - b.gap9); // 학생 성적과 가까워 실현 가능성이 높은 순서로 정렬
+
+  // 만약 후보군이 적은 경우, 최대 허용 한도를 0.52로 소폭 조정하되, 그 이상의 무리한 격차(0.60 이상 등)는 엄격히 배제
+  if (altCategoryReachCandidates.length < 5) {
+    altCategoryReachCandidates = otherCategoryEvaluated
+      .filter((r) => r.gap9 >= -0.05 && r.gap9 <= 0.52)
+      .sort((a, b) => Math.abs(a.gap9 - 0.25) - Math.abs(b.gap9 - 0.25));
   }
 
-  if (safetyList.length === 0 && evaluated.length > 0) {
-    safetyList = evaluated.slice(-6).map((item) => ({
+  const formattedAltReach = altCategoryReachCandidates
+    .slice(0, 8)
+    .map((item) => ({
       ...item,
-      category: '안정지원',
+      category: '상향지원' as SupportCategory,
+      matchType: '선택계열 상향추천 (합격유망)' as any,
+      analysisComment: `[${targetCategory || '선택계열'} 전략추천] 2개년 평균컷 ${item.avgCutoff9}등급(격차 ${
+        item.gap9 > 0 ? '+' : ''
+      }${item.gap9.toFixed(2)}등급) · 잔여학기 집중 및 충원율(${item.replenishRate2025}%) 고려 시 실현 가능한 상향 목표`,
     }));
-  }
 
+  let reachList = [...exactReachList, ...formattedAltReach];
   reachList.sort((a, b) => a.avgCutoff9 - b.avgCutoff9);
 
   return {
@@ -327,10 +470,17 @@ export function calculateReachGoalAnalysis(
   grade: HighSchoolGrade,
   semester: Semester,
   selectedReachUniv: EvaluatedUniversityRecord | null,
-  reachList: EvaluatedUniversityRecord[]
+  reachList: EvaluatedUniversityRecord[],
+  actualCompletedSemesters?: number
 ): ReachGoalAnalysis {
+  // 기본 목표 대학은 희망학과 일치하는 상향 대학을 우선 선택!
+  const exactReachList = reachList.filter((u) => u.matchType === '희망학과 일치');
   const fallbackTarget =
-    reachList.length > 0 ? reachList[Math.min(1, reachList.length - 1)] : null;
+    exactReachList.length > 0
+      ? exactReachList[Math.min(1, exactReachList.length - 1)]
+      : reachList.length > 0
+      ? reachList[0]
+      : null;
   const target = selectedReachUniv || fallbackTarget;
 
   const targetCutoff9 = target ? target.avgCutoff9 : Math.max(1.1, Number((studentAvg9 - 0.45).toFixed(2)));
@@ -346,7 +496,7 @@ export function calculateReachGoalAnalysis(
     },
     고2: {
       '1학기': { done: 3, left: 2 },
-      '2학기': { done: 4, left: 1 },
+      '2학기': { done: 3, left: 2 }, // 고2 2학기 재학 중이면 완료는 고1-1, 고1-2, 고2-1 총 3학기이며 잔여 2학기(고2-2, 고3-1)
     },
     고3: {
       '1학기': { done: 4, left: 1 },
@@ -354,7 +504,15 @@ export function calculateReachGoalAnalysis(
     },
   };
 
-  const { done: completedSemesters, left: remainingSemesters } = semesterMap[grade][semester];
+  // 학생이 실제로 성적을 입력 완료한 학기 수 (전달된 경우 실입력 학기 수 우선 반영)
+  const defaultDone = semesterMap[grade]?.[semester]?.done || 3;
+  const completedSemesters =
+    actualCompletedSemesters !== undefined && actualCompletedSemesters > 0
+      ? Math.min(5, actualCompletedSemesters)
+      : defaultDone;
+
+  // 수시 학생부교과 전형(3학년 1학기까지 총 5개 학기 반영 기준) 잔여 학기
+  const remainingSemesters = Math.max(1, 5 - completedSemesters);
   const totalSemesters = completedSemesters + remainingSemesters;
 
   const rawFuture9 =
@@ -411,15 +569,22 @@ export function calculateReachGoalAnalysis(
 
 export function generateStrategicSubjectRecommendations(
   subjects: SubjectEntry[],
-  trackId: string
+  trackOrTarget: DepartmentTrack | string,
+  targetCategory?: string
 ): {
   strategies: SubjectStudyStrategy[];
   simulatedTop3Avg5: number;
   simulatedTop3Avg9: number;
   simulatedTotalGain9: number;
 } {
-  const track: DepartmentTrack =
-    DEPARTMENT_TRACKS.find((t) => t.id === trackId) || DEPARTMENT_TRACKS[0];
+  let track: DepartmentTrack;
+  if (typeof trackOrTarget === 'object' && trackOrTarget !== null) {
+    track = trackOrTarget;
+  } else {
+    track =
+      DEPARTMENT_TRACKS.find((t) => t.id === trackOrTarget) ||
+      buildDynamicTrack(trackOrTarget, targetCategory || '');
+  }
 
   const currentSummary = calculateStudentGPA(subjects);
   const totalCredits = currentSummary.totalCredits || 1;

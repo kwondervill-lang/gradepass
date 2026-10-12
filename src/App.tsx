@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_SUBJECT_PRESETS,
-  DEPARTMENT_TRACKS,
   INITIAL_HIGH_SCHOOL_SUBJECTS,
+  buildDynamicTrack,
 } from './data/admissionsData';
 import {
   CompanyBranding,
@@ -17,6 +17,7 @@ import {
   calculateStudentGPA,
   evaluateUniversitiesForStudent,
   filterSubjectsForStudentGrade,
+  getActiveGradesForStudent,
   generateStrategicSubjectRecommendations,
 } from './utils/admissionsAnalyzer';
 import {
@@ -28,13 +29,15 @@ import { StudentInputPanel } from './components/StudentInputPanel';
 import { ReportToolbar } from './components/ReportToolbar';
 import { ConsultingReportView } from './components/ConsultingReportView';
 import { HtmlReportModal } from './components/HtmlReportModal';
+import { WordpressEmbedModal } from './components/WordpressEmbedModal';
 import { BrandLogo } from './components/BrandLogo';
 
 export default function App() {
   const [studentName, setStudentName] = useState<string>('김서연');
   const [grade, setGrade] = useState<HighSchoolGrade>('고2');
-  const [semester, setSemester] = useState<Semester>('1학기');
-  const [selectedTrackId, setSelectedTrackId] = useState<string>('comp-ai');
+  const [semester, setSemester] = useState<Semester>('2학기');
+  const [targetMajor, setTargetMajor] = useState<string>('컴퓨터공학과');
+  const [targetCategory, setTargetCategory] = useState<string>('공학계열');
   const [subjects, setSubjects] = useState<SubjectEntry[]>(() => INITIAL_HIGH_SCHOOL_SUBJECTS);
   const [selectedReachUnivId, setSelectedReachUnivId] = useState<string | null>(null);
 
@@ -50,21 +53,23 @@ export default function App() {
   });
 
   const [isHtmlModalOpen, setIsHtmlModalOpen] = useState<boolean>(false);
+  const [isWordpressModalOpen, setIsWordpressModalOpen] = useState<boolean>(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
   const [isFullscreenReport, setIsFullscreenReport] = useState<boolean>(false);
   const [standaloneHtmlBlobUrl, setStandaloneHtmlBlobUrl] = useState<string | null>(null);
 
   const generatedDate = '2026. 10. 12.';
 
+  // 학생이 입력한 희망 학과명 및 계열 기반 전공 트랙 실시간 생성
   const selectedTrack = useMemo(
-    () => DEPARTMENT_TRACKS.find((t) => t.id === selectedTrackId) || DEPARTMENT_TRACKS[0],
-    [selectedTrackId]
+    () => buildDynamicTrack(targetMajor, targetCategory),
+    [targetMajor, targetCategory]
   );
 
-  // 학생 학년에 따라 적용되는 과목 (고1: 고1 / 고2: 고1~고2 종합 / 고3: 고1~고3 종합)
+  // 학생이 실제로 입력한 성적값만을 정확히 필터링 집계 (미도래 미래 학년/학기 완전 배제)
   const activeSubjects = useMemo(
-    () => filterSubjectsForStudentGrade(subjects, grade),
-    [subjects, grade]
+    () => filterSubjectsForStudentGrade(subjects, grade, semester, true),
+    [subjects, grade, semester]
   );
 
   const gpaSummary = useMemo(() => calculateStudentGPA(activeSubjects), [activeSubjects]);
@@ -72,11 +77,12 @@ export default function App() {
   const { reachList, targetList, safetyList } = useMemo(
     () =>
       evaluateUniversitiesForStudent(
-        selectedTrackId,
+        targetMajor,
         gpaSummary.avg9,
-        gpaSummary.avg5
+        gpaSummary.avg5,
+        targetCategory
       ),
-    [selectedTrackId, gpaSummary.avg9, gpaSummary.avg5]
+    [targetMajor, targetCategory, gpaSummary.avg9, gpaSummary.avg5]
   );
 
   const selectedReachUniv = useMemo(() => {
@@ -92,18 +98,39 @@ export default function App() {
         grade,
         semester,
         selectedReachUniv,
-        reachList
+        reachList,
+        gpaSummary.semesterSummaries.length
       ),
-    [gpaSummary.avg5, gpaSummary.avg9, grade, semester, selectedReachUniv, reachList]
+    [
+      gpaSummary.avg5,
+      gpaSummary.avg9,
+      grade,
+      semester,
+      selectedReachUniv,
+      reachList,
+      gpaSummary.semesterSummaries.length,
+    ]
   );
 
   const { strategies, simulatedTop3Avg5, simulatedTop3Avg9, simulatedTotalGain9 } = useMemo(
-    () => generateStrategicSubjectRecommendations(activeSubjects, selectedTrackId),
-    [activeSubjects, selectedTrackId]
+    () => generateStrategicSubjectRecommendations(activeSubjects, selectedTrack, targetCategory),
+    [activeSubjects, selectedTrack, targetCategory]
   );
 
   const handleGradeChange = (newGrade: HighSchoolGrade) => {
     setGrade(newGrade);
+    const validGrades = getActiveGradesForStudent(newGrade);
+    setSubjects((prev) => prev.filter((s) => validGrades.includes(s.gradeLevel || '고1')));
+    setSelectedReachUnivId(null);
+  };
+
+  const handleTargetMajorChange = (newMajor: string) => {
+    setTargetMajor(newMajor);
+    setSelectedReachUnivId(null);
+  };
+
+  const handleTargetCategoryChange = (newCategory: string) => {
+    setTargetCategory(newCategory);
     setSelectedReachUnivId(null);
   };
 
@@ -173,6 +200,8 @@ export default function App() {
       studentName: studentName || '학생',
       grade,
       semester,
+      targetMajor: targetMajor || '컴퓨터공학과',
+      targetCategory: targetCategory || '공학계열',
       track: selectedTrack,
       subjects: activeSubjects,
       gpaSummary,
@@ -191,6 +220,8 @@ export default function App() {
       studentName,
       grade,
       semester,
+      targetMajor,
+      targetCategory,
       selectedTrack,
       activeSubjects,
       gpaSummary,
@@ -322,6 +353,7 @@ export default function App() {
           branding={branding}
           onBrandingChange={setBranding}
           onOpenHtmlModal={() => setIsHtmlModalOpen(true)}
+          onOpenWordpressModal={() => setIsWordpressModalOpen(true)}
           onDownloadPdf={handleDownloadPdf}
           isGeneratingPdf={isGeneratingPdf}
           isFullscreenReport={isFullscreenReport}
@@ -335,6 +367,8 @@ export default function App() {
               studentName={studentName}
               grade={grade}
               semester={semester}
+              targetMajor={targetMajor}
+              targetCategory={targetCategory}
               track={selectedTrack}
               subjects={activeSubjects}
               gpaSummary={gpaSummary}
@@ -359,11 +393,10 @@ export default function App() {
                 onGradeChange={handleGradeChange}
                 semester={semester}
                 onSemesterChange={setSemester}
-                selectedTrackId={selectedTrackId}
-                onTrackChange={(id) => {
-                  setSelectedTrackId(id);
-                  setSelectedReachUnivId(null);
-                }}
+                targetMajor={targetMajor}
+                onTargetMajorChange={handleTargetMajorChange}
+                targetCategory={targetCategory}
+                onTargetCategoryChange={handleTargetCategoryChange}
                 subjects={subjects}
                 onSubjectsChange={setSubjects}
                 onApplyGradePreset={handleApplyGradePreset}
@@ -376,6 +409,8 @@ export default function App() {
                 studentName={studentName}
                 grade={grade}
                 semester={semester}
+                targetMajor={targetMajor}
+                targetCategory={targetCategory}
                 track={selectedTrack}
                 subjects={activeSubjects}
                 gpaSummary={gpaSummary}
@@ -400,6 +435,12 @@ export default function App() {
         htmlString={standaloneHtmlString}
         studentName={studentName || '학생'}
         blobUrl={standaloneHtmlBlobUrl}
+      />
+
+      <WordpressEmbedModal
+        isOpen={isWordpressModalOpen}
+        onClose={() => setIsWordpressModalOpen(false)}
+        appUrl="https://gradepass.vercel.app/"
       />
     </div>
   );

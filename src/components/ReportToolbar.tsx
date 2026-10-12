@@ -13,12 +13,14 @@ import {
   Upload,
   Check,
   RotateCcw,
+  Share2,
 } from 'lucide-react';
 
 interface ReportToolbarProps {
   branding: CompanyBranding;
   onBrandingChange: (branding: CompanyBranding) => void;
   onOpenHtmlModal: () => void;
+  onOpenWordpressModal: () => void;
   onDownloadPdf: () => Promise<void>;
   isGeneratingPdf: boolean;
   isFullscreenReport: boolean;
@@ -30,6 +32,7 @@ export const ReportToolbar: React.FC<ReportToolbarProps> = ({
   branding,
   onBrandingChange,
   onOpenHtmlModal,
+  onOpenWordpressModal,
   onDownloadPdf,
   isGeneratingPdf,
   isFullscreenReport,
@@ -113,8 +116,18 @@ export const ReportToolbar: React.FC<ReportToolbarProps> = ({
           </button>
         </div>
 
-        {/* 우측: HTML 보기 / PDF 다운로드 / 리포트 인쇄 / 전체화면 / 새창열기 */}
+        {/* 우측: 워드프레스 삽입 코드 / HTML 보기 / PDF 다운로드 / 리포트 인쇄 / 전체화면 / 새창열기 */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenWordpressModal}
+            title="워드프레스(WordPress) 본문 삽입용 HTML 코드 복사 및 구글 SEO 안내"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-2xs"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            워드프레스 삽입 코드
+          </button>
+
           <button
             type="button"
             onClick={onOpenHtmlModal}
