@@ -1,0 +1,8 @@
+{
+  "name": "입시 내비게이터",
+  "description": "내신 등급 분석으로 합격 대학을 예측하고, 목표 달성을 위한 학습 전략과 맞춤형 입시 리포트를 제공합니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
